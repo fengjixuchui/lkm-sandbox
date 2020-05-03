@@ -4,7 +4,8 @@
 
 ## [Overview](#overview)
 
-[Modules](#modules) / [Building](#building) / [Testing](#testing) / [Make](#make) / [License](#license) / [Notes](#notes) / [Books](#books) / [Links](#links)
+[Modules](#modules) / [Building](#building) / [Testing](#testing) / [Make](#make) / [Disclaimer](#disclaimer) /
+ [License](#license) / [Notes](#notes) / [Rehearsal](#rehearsal) / [Books](#books) / [Links](#links)
 
 The Linux Kernel Module (LKM) Sandbox is a collection of different modules to learn, test and experiment with
 the development of Linux Kernel Modules. The purpose of this repository is also to practice development within
@@ -23,12 +24,14 @@ No.|Module|Source|Description
 ---|---|---|---
 1|LKM DebugFS|[lkm_debugfs.c](lkm_debugfs.c)|Module showing how to use the debugging filesystem
 2|LKM Device|[lkm_device.c](lkm_device.c)|Module showing how to operate with character devices and storing device information in /proc
+3|LKM Device Numbers|[lkm_device_numbers.c](lkm_device_numbers.c)|Illustrating statically and dynamically allocated device numbers
 3|LKM Memory|[lkm_mem.c](lkm_mem.c)|Module exposing memory and swap information to /proc
-4|LKM Parameters|[lkm_parameters.c](lkm_parameters.c)|Module for passing parameters from user- to kernelspace
-5|LKM Proc|[lkm_proc.c](lkm_proc.c)|Module accessing /proc filesystem using sequential I/O
-6|LKM Process|[lkm_process.c](lkm_process.c)|Accessing and printing current process information
-7|LKM Sandbox|[lkm_sandbox.c](lkm_sandbox.c)|Sandbox module for different experiments
-8|LKM Skeleton|[lkm_skeleton.c](lkm_skeleton.c)|Skeleton module for faster scaffolding of new modules
+4|LKM Memory-based Device|[lkm_mev.c](lkm_mec.c)|Driver for a memory-based character device, based to some degree on scull, developed in the book [Linux Device Drivers](https://lwn.net/Kernel/LDD3/), Chapter 3
+5|LKM Parameters|[lkm_parameters.c](lkm_parameters.c)|Module for passing parameters from user- to kernelspace
+6|LKM Proc|[lkm_proc.c](lkm_proc.c)|Module accessing /proc filesystem using sequential I/O
+7|LKM Process|[lkm_process.c](lkm_process.c)|Accessing and printing current process information
+8|LKM Sandbox|[lkm_sandbox.c](lkm_sandbox.c)|Sandbox module for different experiments
+9|LKM Skeleton|[lkm_skeleton.c](lkm_skeleton.c)|Skeleton module for faster scaffolding of new modules
 
 ## [Building](#building)
 
@@ -93,6 +96,49 @@ sudo rmmod lkm_parameters
 
 ![Screenshots of make](images/screenshots.gif?raw=true "Screenshots of make")
 
+## [Disclaimer](#disclaimer)
+
+This repository will ask you for root permission, because certain operations like loading/unloading modules and
+accessing files in the Linux/GNU System depends on root privileges. The Makefile will state beforehand for what
+these permissions will be used.
+
+You can review all this operations by searching this repository for sudo and be sure that this won't be misused in
+any way. I am aware of that this can be a security issue, but I am trying to make this process as much transparent
+as possible. But be also aware that these modules are coming without any warranty. Kernel panics and data loss can
+happen, please use them preferably inside a Virtual Machine.
+
+### Use of sudo
+
+In the following is a table with all locations where sudo is used (except the README.md).
+
+```sh
+grep -n -r "sudo" *
+```
+
+File:Line|Use of sudo
+---|---
+[Makefile:86](Makefile#L86)|$(call test_file_exists,$(number_file),"-r", "sudo")
+[Makefile:87](Makefile#L87)|$(eval number_file_content = `sudo cat $(number_file)`)
+[Makefile:90](Makefile#L90)|$(eval message_file_content = `sudo cat $(message_file) | tr -d '\0'`)
+[Makefile:91](Makefile#L91)|$(call test_file_exists,$(message_file),"-r", "sudo")
+[Makefile:94](Makefile#L94)|@sudo rmmod $(module_filename)
+[Makefile:108](Makefile#L108)|@sudo mknod $(device_filename) c `cat $(proc_filename)` 0
+[Makefile:111](Makefile#L111)|@sudo rm $(device_filename)
+[Makefile:112](Makefile#L112)|@sudo rmmod $(module_filename)
+[Makefile:130](Makefile#L130)|@sudo rmmod $(module_filename)
+[Makefile:143](Makefile#L143)| @sudo mknod $(device_file) c $(major) 0
+[Makefile:144](Makefile#L144)|@echo "Testing" \| sudo tee $(device_file)
+[Makefile:146](Makefile#L146)|@sudo rm -fv $(device_file)
+[Makefile:147](Makefile#L147)|@sudo rmmod $(module)
+[Makefile:158](Makefile#L158)|@sudo insmod $(module).ko number=$(number) message=\"$(message)\"
+[Makefile:161](Makefile#L161)|@sudo rmmod $(module)
+[Makefile:175](Makefile#L175)|@sudo rmmod ${module}   
+[Makefile:187](Makefile#L187)|@sudo insmod $(module).ko
+[Makefile:190](Makefile#L190)|@sudo rmmod $(module)
+[tests.mk:31](tests.mk#L31)|@lsmod \| awk '{print $$1}' \| grep -qE "^$(1)$$" && (sudo rmmod $(1) && sudo insmod $(1).ko) \|\| sudo insmod $(1).ko
+[tests.mk:75](tests.mk#L75)|@sudo dmesg --clear
+[tests.mk:78](tests.mk#L78)|@sudo rmmod $(1)
+
 ## [License](#license)
 
 LKM Sandbox is free software: you can redistribute it and/or modify
@@ -120,6 +166,21 @@ than operates in a sequential pattern."
 
 "With kernel development, you’re writing APIs, not applications themselves."
 
+## [Rehearsal](#rehearsal)
+
+For a better understanding of concepts in the kernelspace it is necessary to review and rehearse fundamental basics
+of C and the standard library. Next to being able to improve understanding it is possible to compare approaches.
+Most of those basics are low-level, starting with file I/O and can be looked through as a companion source.
+It is never bad to rehearse things, but sometimes a little embarrassing to admit having to rehearse such things :)
+
+File|Concept
+---|---
+[read.c](rehearsals/read.c)|Reading of files in vanilla C
+[write.c](rehearsals/write.c)|Writing/Appending to files in vanilla C
+
+To build those files just run ``make clean && make`` in `./rehearsals/` and all executables will be placed in
+the build directory.
+
 ## [Books](#books)
 
 - [Linux Device Drivers](https://lwn.net/Kernel/LDD3/) by Jonathan Corbet, Alessandro Rubini, and Greg Kroah-Hartman, 3rd edition, 2009
@@ -137,6 +198,7 @@ than operates in a sequential pattern."
 - Pointer-Overloading, [Creating entry in proc...](http://pointer-overloading.blogspot.com/2013/09/linux-creating-entry-in-proc-file.html) by eniac
 - Stackoverflow, [Is there a C function like sprintf in the Linux kernel?](https://stackoverflow.com/questions/12264291/is-there-a-c-function-like-sprintf-in-the-linux-kernel)
 - Stackoverflow, [sprintf function's buffer overflow?](https://stackoverflow.com/questions/4282281/sprintf-functions-buffer-overflow)
+- Stackoverflow, [How to compile a Linux kernel module using -std=gnu99?](https://stackoverflow.com/questions/15910064/how-to-compile-a-linux-kernel-module-using-std-gnu99)
 - Superuser, [Variables in GNU Make...](https://superuser.com/questions/790560/variables-in-gnu-make-recipes-is-that-possible)
 - SysTutorials, [How to get a Makefiles directory for including other Makefiles](https://www.systutorials.com/how-to-get-a-makefiles-directory-for-including-other-makefiles/) by Eric Ma
 - Visual Studio Code, [Snippets](https://code.visualstudio.com/docs/editor/userdefinedsnippets)
